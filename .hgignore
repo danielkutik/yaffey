@@ -1,0 +1,12 @@
+syntax: glob
+
+*.o
+*.pro.user
+debug
+release
+Makefile
+Makefile.Debug
+Makefile.Release
+object_script.*.Debug
+object_script.*.Release
+ui_*.h
