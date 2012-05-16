@@ -28,22 +28,15 @@ class YaffsTreeView : public QTreeView {
 public:
     explicit YaffsTreeView(QWidget* parent = 0);
 
-protected Q_SLOTS:
-//    void extractItems();
-//    void actionChanged(Qt::DropAction action);
-
 Q_SIGNALS:
     void selectionChanged();
 
 protected:
     void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-
     void dragEnterEvent(QDragEnterEvent* event);
-//    void dragMoveEvent(QDragMoveEvent* event);
+    void dragMoveEvent(QDragMoveEvent* event);
     void dragLeaveEvent(QDragLeaveEvent* event);
     void dropEvent(QDropEvent* event);
-/*    void mouseMoveEvent(QMouseEvent* event);
-    void mouseReleaseEvent(QMouseEvent* event);*/
 };
 
 #endif  //YAFFSTREEVIEW_H

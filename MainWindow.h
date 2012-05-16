@@ -24,6 +24,7 @@
 #include <QMenu>
 
 #include "YaffsModel.h"
+#include "YaffsManager.h"
 
 #define SELECTED_ROOT               0x1
 #define SELECTED_DIR                0x2
@@ -69,8 +70,7 @@ private slots:
     void on_treeViewHeader_customContextMenuRequested(const QPoint& pos);
     void on_treeView_customContextMenuRequested(const QPoint& pos);
     void on_treeView_selectionChanged();
-    void on_model_DataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
-    void on_model_LayoutChanged();
+    void on_modelChanged();
 
 private:
     void newModel();
@@ -82,11 +82,12 @@ private:
     int identifySelection(const QModelIndexList& selectedRows);
 
 private:
-    Ui::MainWindow* mUi;
-    YaffsModel* mYaffsModel;
+    Ui::MainWindow* mUi;                //owned
+    YaffsModel* mYaffsModel;            //not owned
+    YaffsManager* mYaffsManager;        //not owned - singleton
     QMenu mContextMenu;
     QMenu mHeaderContextMenu;
-    QDialog* mFastbootDialog;
+    QDialog* mFastbootDialog;           //owned
 };
 
 #endif  //MAINWINDOW_H

@@ -21,13 +21,37 @@
 #include "YaffsManager.h"
 #include "YaffsControl.h"
 
-YaffsManager::YaffsManager(const QString& imgFile) {
-    mImageFile = imgFile;
+YaffsManager* YaffsManager::mSelf = new YaffsManager();
+
+YaffsManager* YaffsManager::getInstance() {
+    return mSelf;
+}
+
+YaffsManager::YaffsManager() {
+    mYaffsModel = NULL;
     mFilesExported = 0;
     mDirsExported = 0;
 }
 
+YaffsManager::~YaffsManager() {
+    delete mYaffsModel;
+}
+
+YaffsModel* YaffsManager::newModel() {
+    delete mYaffsModel;
+    mYaffsModel = new YaffsModel();
+    connect(mYaffsModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&)), SLOT(on_model_DataChanged(QModelIndex, QModelIndex)));
+    connect(mYaffsModel, SIGNAL(layoutChanged()), SLOT(on_model_LayoutChanged()));
+    emit modelChanged();
+    return mYaffsModel;
+}
+
 void YaffsManager::exportItem(const YaffsItem* item, const QString& path) {
+    mFileExportFailures.clear();        //temp until ExportInfo is introduced
+    mDirExportFailures.clear();
+    mFilesExported = 0;
+    mDirsExported = 0;
+
     if (item) {
         if (item->isFile()) {
             exportFile(item, path);
@@ -35,6 +59,14 @@ void YaffsManager::exportItem(const YaffsItem* item, const QString& path) {
             exportDirectory(item, path);
         }
     }
+}
+
+void YaffsManager::on_model_DataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight) {
+    emit modelChanged();
+}
+
+void YaffsManager::on_model_LayoutChanged() {
+    emit modelChanged();
 }
 
 void YaffsManager::exportFile(const YaffsItem* item, const QString& path) {

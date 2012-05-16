@@ -25,6 +25,7 @@
 #include "YaffsTreeView.h"
 #include "YaffsItem.h"
 #include "YaffsModel.h"
+#include "YaffsManager.h"
 
 YaffsTreeView::YaffsTreeView(QWidget* parent) : QTreeView(parent) {
     qDebug() << "YaffsTreeView()";
@@ -37,57 +38,65 @@ void YaffsTreeView::selectionChanged(const QItemSelection& selected, const QItem
 
 void YaffsTreeView::dragEnterEvent(QDragEnterEvent* event) {
     qDebug() << "dragEnterEvent";
+
+    const QMimeData* mimeData = event->mimeData();
+    if (mimeData && mimeData->hasUrls()) {
+        event->accept();
+    }
 }
-/*
+
 void YaffsTreeView::dragMoveEvent(QDragMoveEvent* event) {
-    qDebug() << "dragMoveEvent";
+    bool accept = false;
+
+    QModelIndex modelIndex = indexAt(event->pos());
+    if (modelIndex.isValid()) {
+        YaffsItem* item = static_cast<YaffsItem*>(modelIndex.internalPointer());
+        if (item) {
+            if (item->isDir()) {
+                accept = true;
+            }
+        }
+    }
+
+    if (accept) {
+        event->accept();
+    } else {
+        event->ignore();
+    }
 }
-*/
+
 void YaffsTreeView::dragLeaveEvent(QDragLeaveEvent* event) {
     qDebug() << "dragLeaveEvent";
 }
 
 void YaffsTreeView::dropEvent(QDropEvent* event) {
     qDebug() << "dropEvent";
-}
-/*
-void YaffsTreeView::extractItems() {
-    if (mMimeData && !mMimeData->extracted) {
-        qDebug() << "Creating files...";
 
-        QString tmpDir = QDir::tempPath() + QDir::separator() + "YaffeyTemp" + QDir::separator();
-        QString imgFile = static_cast<YaffsModel*>(model())->getImageFile();
-        YaffsExtractor extractor(imgFile);
+    QModelIndex modelIndex = indexAt(event->pos());
+    if (modelIndex.isValid()) {
+        YaffsItem* parentItem = static_cast<YaffsItem*>(modelIndex.internalPointer());
+        if (parentItem && parentItem->isDir()) {
+            qDebug() << parentItem->getFullPath();
 
-        QModelIndexList selectedRows = selectionModel()->selectedRows();
-        foreach (QModelIndex index, selectedRows) {
-            YaffsItem* item = static_cast<YaffsItem*>(index.internalPointer());
-            tmp = new QFile(tmpDir + item->getName());
-            tmp->open(QIODevice::WriteOnly);
-//            extractor.extract(item, tmpDir);
-        }
-        mMimeData->extracted = true;
-    }
-}
+            const QMimeData* mimeData = event->mimeData();
+            if (mimeData && mimeData->hasUrls()) {
+                YaffsModel* yaffsManagerModel = YaffsManager::getInstance()->getModel();
+                YaffsModel* yaffsModel = static_cast<YaffsModel*>(model());
 
-void YaffsTreeView::actionChanged(Qt::DropAction action) {
-    qDebug() << "actionChanged" << action;
+                if (yaffsManagerModel == yaffsModel) {
+                    QList<QUrl> urls = mimeData->urls();
+                    foreach (QUrl url, urls) {
+                        QFileInfo fileInfo(url.toLocalFile());
+                        if (fileInfo.isDir()) {
+                            yaffsModel->importDirectory(parentItem, fileInfo.absoluteFilePath());
+                        } else if (fileInfo.isFile()) {
+                            yaffsModel->importFile(parentItem, fileInfo.absoluteFilePath());
+                        }
+                    }
 
-//    mAction = action;
-}
-
-void YaffsTreeView::mouseReleaseEvent(QMouseEvent* event) {
-    qDebug() << "mouseReleaseEvent";
-    QTreeView::mouseReleaseEvent(event);
-
-    if (mAction == Qt::MoveAction) {
-        QModelIndexList selectedRows = selectionModel()->selectedRows();
-        QString imgFile = static_cast<YaffsModel*>(model())->getImageFile();
-        YaffsExtractor extractor(imgFile);
-        foreach (QModelIndex index, selectedRows) {
-            YaffsItem* item = static_cast<YaffsItem*>(index.internalPointer());
-            extractor.extractFile(item, tmp);
+                    event->accept();
+                }
+            }
         }
     }
 }
-*/

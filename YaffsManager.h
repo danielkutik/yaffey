@@ -22,23 +22,40 @@
 #include <QList>
 #include <QFile>
 
-#include "YaffsItem.h"
+#include "YaffsModel.h"
 
-class YaffsManager {
+class YaffsManager : public QObject {
+    Q_OBJECT
+
 public:
-    YaffsManager(const QString& imgFile);
+    static YaffsManager* getInstance();
+    ~YaffsManager();
+
+    YaffsModel* newModel();
     void exportItem(const YaffsItem* item, const QString& path);
+    void setImageFile(const QString& imageFile) { mImageFile = imageFile; }     //temp until YaffsManager owns the Model and Image filename
+    YaffsModel* getModel() { return mYaffsModel; }
     int getFileExportCount() const { return mFilesExported; }
     int getDirExportCount() const { return mDirsExported; }
     const QList<const YaffsItem*>& getFileExportFailures() const { return mFileExportFailures; }
     const QList<const YaffsItem*>& getDirExportFailures() const { return mDirExportFailures; }
 
+signals:
+    void modelChanged();
+
+private slots:
+    void on_model_DataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
+    void on_model_LayoutChanged();
+
 private:
+    YaffsManager();
     void exportFile(const YaffsItem* item, const QString& path);
     void exportDirectory(const YaffsItem* item, const QString& path);
     bool saveDataToFile(const QString& filename, const char* data, int length);
 
 private:
+    static YaffsManager* mSelf;
+    YaffsModel* mYaffsModel;
     QString mImageFile;
     QList<const YaffsItem*> mFileExportFailures;
     QList<const YaffsItem*> mDirExportFailures;

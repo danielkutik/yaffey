@@ -59,8 +59,8 @@ MainWindow::MainWindow(QWidget* parent, QString imageFilename) : QMainWindow(par
     mHeaderContextMenu.addAction(mUi->actionColumnUser);
     mHeaderContextMenu.addAction(mUi->actionColumnGroup);
 
-    //create model
-    mYaffsModel = NULL;
+    //get YaffsManager instance and create model
+    mYaffsManager = YaffsManager::getInstance();
     newModel();
     updateWindowTitle();
 
@@ -114,16 +114,13 @@ MainWindow::MainWindow(QWidget* parent, QString imageFilename) : QMainWindow(par
 
 MainWindow::~MainWindow() {
     delete mUi;
-    delete mYaffsModel;
     delete mFastbootDialog;
 }
 
 void MainWindow::newModel() {
-    delete mYaffsModel;
-    mYaffsModel = new YaffsModel();
+    mYaffsModel = mYaffsManager->newModel();
     mUi->treeView->setModel(mYaffsModel);
-    connect(mYaffsModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&)), SLOT(on_model_DataChanged(QModelIndex, QModelIndex)));
-    connect(mYaffsModel, SIGNAL(layoutChanged()), SLOT(on_model_LayoutChanged()));
+    connect(mYaffsManager, SIGNAL(modelChanged()), SLOT(on_modelChanged()));
 }
 
 void MainWindow::on_treeView_doubleClicked(const QModelIndex& itemIndex) {
@@ -440,11 +437,7 @@ void MainWindow::on_treeView_customContextMenuRequested(const QPoint& pos) {
     mContextMenu.exec(p);
 }
 
-void MainWindow::on_model_DataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight) {
-    setupActions();
-}
-
-void MainWindow::on_model_LayoutChanged() {
+void MainWindow::on_modelChanged() {
     setupActions();
 }
 
@@ -456,18 +449,18 @@ void MainWindow::exportSelectedItems(const QString& path) {
     QModelIndexList selectedRows = mUi->treeView->selectionModel()->selectedRows();
     if (selectedRows.size() > 0) {
         QString imageFilename = mYaffsModel->getImageFilename();
-        YaffsManager yaffsManager(imageFilename);
+        mYaffsManager->setImageFile(imageFilename);
         foreach (QModelIndex index, selectedRows) {
             YaffsItem* item = static_cast<YaffsItem*>(index.internalPointer());
-            yaffsManager.exportItem(item, path);
+            mYaffsManager->exportItem(item, path);
         }
 
-        QString status = "Exported " + QString::number(yaffsManager.getDirExportCount()) + " dir(s) and " +
-                                       QString::number(yaffsManager.getFileExportCount()) + " file(s).";
+        QString status = "Exported " + QString::number(mYaffsManager->getDirExportCount()) + " dir(s) and " +
+                                       QString::number(mYaffsManager->getFileExportCount()) + " file(s).";
         mUi->statusBar->showMessage(status);
 
-        int dirFails = yaffsManager.getDirExportFailures().size();
-        int fileFails = yaffsManager.getFileExportFailures().size();
+        int dirFails = mYaffsManager->getDirExportFailures().size();
+        int fileFails = mYaffsManager->getFileExportFailures().size();
         if (dirFails + fileFails > 0) {
             QString msg;
 
@@ -475,7 +468,7 @@ void MainWindow::exportSelectedItems(const QString& path) {
                 static const int MAXDIRS = 10;
                 QString items;
                 int max = (dirFails > MAXDIRS ? MAXDIRS : dirFails);
-                const QList<const YaffsItem*> list = yaffsManager.getDirExportFailures();
+                const QList<const YaffsItem*> list = mYaffsManager->getDirExportFailures();
                 for (int i = 0; i < max; ++i) {
                     const YaffsItem* item = list.at(i);
                     items += item->getFullPath() + "\n";
@@ -495,7 +488,7 @@ void MainWindow::exportSelectedItems(const QString& path) {
                 static const int MAXFILES = 10;
                 QString items;
                 int max = (fileFails > MAXFILES ? MAXFILES : dirFails);
-                const QList<const YaffsItem*> list = yaffsManager.getFileExportFailures();
+                const QList<const YaffsItem*> list = mYaffsManager->getFileExportFailures();
                 for (int i = 0; i < max; ++i) {
                     const YaffsItem* item = list.at(i);
                     items += item->getFullPath() + "\n";
