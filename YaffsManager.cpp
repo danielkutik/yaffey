@@ -18,16 +18,16 @@
 
 #include <QDir>
 
-#include "YaffsExporter.h"
+#include "YaffsManager.h"
 #include "YaffsControl.h"
 
-YaffsExporter::YaffsExporter(const QString& imgFile) {
+YaffsManager::YaffsManager(const QString& imgFile) {
     mImageFile = imgFile;
     mFilesExported = 0;
     mDirsExported = 0;
 }
 
-void YaffsExporter::exportItem(const YaffsItem* item, const QString& path) {
+void YaffsManager::exportItem(const YaffsItem* item, const QString& path) {
     if (item) {
         if (item->isFile()) {
             exportFile(item, path);
@@ -37,7 +37,7 @@ void YaffsExporter::exportItem(const YaffsItem* item, const QString& path) {
     }
 }
 
-void YaffsExporter::exportFile(const YaffsItem* item, const QString& path) {
+void YaffsManager::exportFile(const YaffsItem* item, const QString& path) {
     bool result = false;
     if (item->isFile()) {
         int headerPosition = item->getHeaderPosition();
@@ -60,7 +60,7 @@ void YaffsExporter::exportFile(const YaffsItem* item, const QString& path) {
     }
 }
 
-void YaffsExporter::exportDirectory(const YaffsItem* item, const QString& path) {
+void YaffsManager::exportDirectory(const YaffsItem* item, const QString& path) {
     bool result = false;
     if (item->isDir()) {
         result = true;
@@ -87,7 +87,7 @@ void YaffsExporter::exportDirectory(const YaffsItem* item, const QString& path) 
     }
 }
 
-bool YaffsExporter::saveDataToFile(const QString& filename, const char* data, int length) {
+bool YaffsManager::saveDataToFile(const QString& filename, const char* data, int length) {
     bool result = false;
     QFile file(filename);
     bool open = file.open(QIODevice::WriteOnly);

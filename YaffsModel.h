@@ -56,7 +56,7 @@ public:
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex());
 
 protected:
-    //from YaffsReaderObserver
+    //from YaffsControlObserver
     void newItem(int yaffsObjectId, const yaffs_obj_hdr* yaffsObjectHeader, int fileOffset);
     void readComplete();
 

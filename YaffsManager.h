@@ -16,17 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#ifndef YAFFSEXPORTER_H
-#define YAFFSEXPORTER_H
+#ifndef YAFFSMANAGER_H
+#define YAFFSMANAGER_H
 
 #include <QList>
 #include <QFile>
 
 #include "YaffsItem.h"
 
-class YaffsExporter {
+class YaffsManager {
 public:
-    YaffsExporter(const QString& imgFile);
+    YaffsManager(const QString& imgFile);
     void exportItem(const YaffsItem* item, const QString& path);
     int getFileExportCount() const { return mFilesExported; }
     int getDirExportCount() const { return mDirsExported; }
@@ -46,4 +46,4 @@ private:
     int mDirsExported;
 };
 
-#endif  //YAFFSEXPORTER_H
+#endif  //YAFFSMANAGER_H

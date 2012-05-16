@@ -16,6 +16,10 @@ class DialogFastboot : public QDialog {
 public:
     explicit DialogFastboot(QWidget* parent = 0);
     ~DialogFastboot();
+
+protected:
+    //from QDialog
+    void closeEvent(QCloseEvent* event);
     
 private slots:
     void on_pushBrowseFastboot_clicked();
@@ -25,11 +29,9 @@ private slots:
     void on_pushFlash_clicked();
     void on_pushClose_clicked();
     void on_listDevices_itemChanged(QListWidgetItem* item);
-
     void on_processStdOutput();
     void on_processStdError();
     void on_processFinished(int exitCode, QProcess::ExitStatus exitStatus);
-
     void on_boxPartition_currentIndexChanged(const QString &arg1);
 
 private:

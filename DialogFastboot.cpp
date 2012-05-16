@@ -2,6 +2,7 @@
 
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QCloseEvent>
 
 #include "DialogFastboot.h"
 #include "ui_DialogFastboot.h"
@@ -30,6 +31,13 @@ DialogFastboot::DialogFastboot(QWidget* parent) : QDialog(parent),
 
 DialogFastboot::~DialogFastboot() {
     delete mUi;
+}
+
+void DialogFastboot::closeEvent(QCloseEvent* event) {
+    if (event) {
+        event->ignore();
+        hide();
+    }
 }
 
 void DialogFastboot::on_pushBrowseFastboot_clicked() {
@@ -98,32 +106,7 @@ void DialogFastboot::on_pushFlash_clicked() {
 }
 
 void DialogFastboot::on_pushClose_clicked() {
-    close();
-}
-
-void DialogFastboot::analyzeSelections() {
-    QString commandLine;
-
-    if (mGotFastbootFile) {
-        //execute fastboot with devices parameter and parse output
-
-        mUi->labelFastbootFileStatus->setPixmap(QPixmap(QString::fromUtf8(GREEN_TICK)));
-        commandLine += fastboot;
-    } else {
-        mUi->labelFastbootFileStatus->setPixmap(QPixmap(QString::fromUtf8(RED_CROSS)));
-    }
-
-    commandLine += " flash ";
-    commandLine += mUi->boxPartition->currentText() + " ";
-
-    if (mGotImageFile) {
-        mUi->labelImageFileStatus->setPixmap(QPixmap(QString::fromUtf8(GREEN_TICK)));
-        commandLine += mUi->lineImageFile->text();
-    } else {
-        mUi->labelImageFileStatus->setPixmap(QPixmap(QString::fromUtf8(RED_CROSS)));
-    }
-
-    mUi->lineCommandLine->setText(commandLine);
+    hide();
 }
 
 void DialogFastboot::on_listDevices_itemChanged(QListWidgetItem* item) {
@@ -166,4 +149,29 @@ void DialogFastboot::on_processFinished(int exitCode, QProcess::ExitStatus exitS
 
 void DialogFastboot::on_boxPartition_currentIndexChanged(const QString& text) {
     analyzeSelections();
+}
+
+void DialogFastboot::analyzeSelections() {
+    QString commandLine;
+
+    if (mGotFastbootFile) {
+        //execute fastboot with devices parameter and parse output
+
+        mUi->labelFastbootFileStatus->setPixmap(QPixmap(QString::fromUtf8(GREEN_TICK)));
+        commandLine += fastboot;
+    } else {
+        mUi->labelFastbootFileStatus->setPixmap(QPixmap(QString::fromUtf8(RED_CROSS)));
+    }
+
+    commandLine += " flash ";
+    commandLine += mUi->boxPartition->currentText() + " ";
+
+    if (mGotImageFile) {
+        mUi->labelImageFileStatus->setPixmap(QPixmap(QString::fromUtf8(GREEN_TICK)));
+        commandLine += mUi->lineImageFile->text();
+    } else {
+        mUi->labelImageFileStatus->setPixmap(QPixmap(QString::fromUtf8(RED_CROSS)));
+    }
+
+    mUi->lineCommandLine->setText(commandLine);
 }

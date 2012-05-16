@@ -55,6 +55,7 @@ private slots:
     void on_actionRename_triggered();
     void on_actionDelete_triggered();
     void on_actionEditProperties_triggered();
+    void on_actionAndroidFastboot_triggered();
     void on_actionAbout_triggered();
     void on_actionColumnName_triggered();
     void on_actionColumnSize_triggered();
@@ -67,10 +68,9 @@ private slots:
     void on_actionColumnGroup_triggered();
     void on_treeViewHeader_customContextMenuRequested(const QPoint& pos);
     void on_treeView_customContextMenuRequested(const QPoint& pos);
+    void on_treeView_selectionChanged();
     void on_model_DataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
     void on_model_LayoutChanged();
-    void on_treeView_selectionChanged();
-    void on_actionAndroidFastboot_triggered();
 
 private:
     void newModel();
@@ -86,6 +86,7 @@ private:
     YaffsModel* mYaffsModel;
     QMenu mContextMenu;
     QMenu mHeaderContextMenu;
+    QDialog* mFastbootDialog;
 };
 
 #endif  //MAINWINDOW_H

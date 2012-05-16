@@ -28,7 +28,7 @@
 #include "DialogEditProperties.h"
 #include "DialogFastboot.h"
 #include "DialogImport.h"
-#include "YaffsExporter.h"
+#include "YaffsManager.h"
 #include "YaffsTreeView.h"
 
 static const QString APPNAME = "Yaffey";
@@ -107,12 +107,15 @@ MainWindow::MainWindow(QWidget* parent, QString imageFilename) : QMainWindow(par
         mUi->statusBar->showMessage(windowTitle() + " v" + VERSION);
     }
 
+    mFastbootDialog = NULL;
+
     setupActions();
 }
 
 MainWindow::~MainWindow() {
     delete mUi;
     delete mYaffsModel;
+    delete mFastbootDialog;
 }
 
 void MainWindow::newModel() {
@@ -335,8 +338,12 @@ void MainWindow::on_actionEditProperties_triggered() {
 }
 
 void MainWindow::on_actionAndroidFastboot_triggered() {
-    QDialog* fastbootDialog = new DialogFastboot(this);
-    fastbootDialog->exec();
+    if (mFastbootDialog) {
+        mFastbootDialog->show();
+    } else {
+        mFastbootDialog = new DialogFastboot(this);
+        mFastbootDialog->exec();
+    }
 }
 
 void MainWindow::on_actionAbout_triggered() {
@@ -449,18 +456,18 @@ void MainWindow::exportSelectedItems(const QString& path) {
     QModelIndexList selectedRows = mUi->treeView->selectionModel()->selectedRows();
     if (selectedRows.size() > 0) {
         QString imageFilename = mYaffsModel->getImageFilename();
-        YaffsExporter exporter(imageFilename);
+        YaffsManager yaffsManager(imageFilename);
         foreach (QModelIndex index, selectedRows) {
             YaffsItem* item = static_cast<YaffsItem*>(index.internalPointer());
-            exporter.exportItem(item, path);
+            yaffsManager.exportItem(item, path);
         }
 
-        QString status = "Exported " + QString::number(exporter.getDirExportCount()) + " dir(s) and " +
-                                       QString::number(exporter.getFileExportCount()) + " file(s).";
+        QString status = "Exported " + QString::number(yaffsManager.getDirExportCount()) + " dir(s) and " +
+                                       QString::number(yaffsManager.getFileExportCount()) + " file(s).";
         mUi->statusBar->showMessage(status);
 
-        int dirFails = exporter.getDirExportFailures().size();
-        int fileFails = exporter.getFileExportFailures().size();
+        int dirFails = yaffsManager.getDirExportFailures().size();
+        int fileFails = yaffsManager.getFileExportFailures().size();
         if (dirFails + fileFails > 0) {
             QString msg;
 
@@ -468,7 +475,7 @@ void MainWindow::exportSelectedItems(const QString& path) {
                 static const int MAXDIRS = 10;
                 QString items;
                 int max = (dirFails > MAXDIRS ? MAXDIRS : dirFails);
-                const QList<const YaffsItem*> list = exporter.getDirExportFailures();
+                const QList<const YaffsItem*> list = yaffsManager.getDirExportFailures();
                 for (int i = 0; i < max; ++i) {
                     const YaffsItem* item = list.at(i);
                     items += item->getFullPath() + "\n";
@@ -488,7 +495,7 @@ void MainWindow::exportSelectedItems(const QString& path) {
                 static const int MAXFILES = 10;
                 QString items;
                 int max = (fileFails > MAXFILES ? MAXFILES : dirFails);
-                const QList<const YaffsItem*> list = exporter.getFileExportFailures();
+                const QList<const YaffsItem*> list = yaffsManager.getFileExportFailures();
                 for (int i = 0; i < max; ++i) {
                     const YaffsItem* item = list.at(i);
                     items += item->getFullPath() + "\n";

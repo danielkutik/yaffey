@@ -17,12 +17,12 @@ SOURCES   += main.cpp\
     YaffsTreeView.cpp \
     DialogEditProperties.cpp \
     YaffsControl.cpp \
-    YaffsExporter.cpp \
     yaffs2/yaffs_packedtags2.c \
     yaffs2/yaffs_hweight.c \
     yaffs2/yaffs_ecc.c \
     DialogFastboot.cpp \
-    DialogImport.cpp
+    DialogImport.cpp \
+    YaffsManager.cpp
 
 HEADERS   += \
     MainWindow.h \
@@ -31,7 +31,6 @@ HEADERS   += \
     YaffsTreeView.h \
     DialogEditProperties.h \
     YaffsControl.h \
-    YaffsExporter.h \
     yaffs2/yaffs_trace.h \
     yaffs2/yaffs_packedtags2.h \
     yaffs2/yaffs_hweight.h \
@@ -40,7 +39,8 @@ HEADERS   += \
     AndroidIDs.h \
     Yaffs2.h \
     DialogFastboot.h \
-    DialogImport.h
+    DialogImport.h \
+    YaffsManager.h
 
 FORMS     += \
     MainWindow.ui \
