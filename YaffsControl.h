@@ -29,6 +29,7 @@ public:
 
 struct YaffsReadInfo {
     bool result;
+    bool eofHasIncompletePage;
     int numFiles;
     int numDirs;
     int numSymLinks;
@@ -36,6 +37,16 @@ struct YaffsReadInfo {
     int numUnknowns;
     int numSpecials;
     int numErrorousObjects;
+};
+
+struct YaffsSaveInfo {
+    bool result;
+    int numFilesSaved;
+    int numFilesFailed;
+    int numDirsSaved;
+    int numDirsFailed;
+    int numSymLinksSaved;
+    int numSymLinksFailed;
 };
 
 class YaffsControl {
@@ -50,14 +61,16 @@ public:
     ~YaffsControl();
 
     bool open(OpenType openType);
-    YaffsReadInfo readImage();
+    bool readImage();
+    YaffsReadInfo getReadInfo() { return mReadInfo; }
+    YaffsSaveInfo getSaveInfo() { return mSaveInfo; }
     char* extractFile(int objectHeaderPos);
     bool updateHeader(int objectHeaderPos, const yaffs_obj_hdr& objectHeader, int objectId);
 
     int addRoot(const yaffs_obj_hdr& objectHeader, int& headerPos);
     int addDirectory(const yaffs_obj_hdr& objectHeader, int& headerPos);
     int addFile(const yaffs_obj_hdr& objectHeader, int& headerPos, const char* data, int fileSize);
-    int addSimLink(const yaffs_obj_hdr& objectHeader, int& headerPos);
+    int addSymLink(const yaffs_obj_hdr& objectHeader, int& headerPos);
 
 private:
     int readPage();
@@ -71,6 +84,7 @@ private:
     FILE* mImageFile;
 
     YaffsReadInfo mReadInfo;
+    YaffsSaveInfo mSaveInfo;
     static u8 mPageData[];
     static u8* mChunkData;
     static u8* mSpareData;

@@ -16,14 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+#include <QDebug>
+
 #include <QFile>
 #include <QMessageBox>
 #include <QFileDialog>
-#include <QDebug>
+#include <QListView>
 
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 #include "DialogEditProperties.h"
+#include "DialogFastboot.h"
+#include "DialogImport.h"
 #include "YaffsExporter.h"
 #include "YaffsTreeView.h"
 
@@ -122,7 +126,7 @@ void MainWindow::newModel() {
 void MainWindow::on_treeView_doubleClicked(const QModelIndex& itemIndex) {
     YaffsItem* item = static_cast<YaffsItem*>(itemIndex.internalPointer());
     if (item) {
-        if (item->isFile() || item->isSimLink()) {
+        if (item->isFile() || item->isSymLink()) {
             mUi->actionEditProperties->trigger();
         }
     }
@@ -175,6 +179,10 @@ void MainWindow::openImage(const QString& imageFilename) {
                             "<tr><td width=120>Unknowns:</td><td>" + QString::number(readInfo.numUnknowns) + "</td></tr>" +
                             "<tr><td colspan=2><hr/></td></tr>" +
                             "<tr><td width=120>Errors:</td><td>" + QString::number(readInfo.numErrorousObjects) + "</td></tr></table>");
+
+            if (readInfo.eofHasIncompletePage) {
+                summary += "<br/><br/>Warning:<br/>Incomplete page found at end of file";
+            }
             QMessageBox::information(this, "Summary", summary);
         } else {
             QString msg = "Error opening image: " + imageFilename;
@@ -217,27 +225,52 @@ void MainWindow::on_actionSaveAs_triggered() {
         QString imgName = mYaffsModel->getImageFilename();
         QString saveAsFilename = QFileDialog::getSaveFileName(this, "Save Image As", "./" + imgName);
         if (saveAsFilename.length() > 0) {
-            bool saved = mYaffsModel->saveAs(saveAsFilename);
-            if (saved) {
+            YaffsSaveInfo saveInfo = mYaffsModel->saveAs(saveAsFilename);
+            updateWindowTitle();
+            if (saveInfo.result) {
                 mUi->statusBar->showMessage("Image saved: " + saveAsFilename);
+                QString summary("<table>" \
+                                "<tr><td width=120>Files:</td><td>" + QString::number(saveInfo.numFilesSaved) + "</td></tr>" +
+                                "<tr><td width=120>Directories:</td><td>" + QString::number(saveInfo.numDirsSaved) + "</td></tr>" +
+                                "<tr><td width=120>SymLinks:</td><td>" + QString::number(saveInfo.numSymLinksSaved) + "</td></tr>" +
+                                "<tr><td colspan=2><hr/></td></tr>" +
+                                "<tr><td width=120>Files Failed:</td><td>" + QString::number(saveInfo.numFilesFailed) + "</td></tr>" +
+                                "<tr><td width=120>Directories Failed:</td><td>" + QString::number(saveInfo.numDirsFailed) + "</td></tr>" +
+                                "<tr><td width=120>SymLinks Failed:</td><td>" + QString::number(saveInfo.numSymLinksFailed) + "</td></tr></td></tr></table>");
+                QMessageBox::information(this, "Save summary", summary);
             } else {
                 QString msg = "Error saving image: " + saveAsFilename;
                 QMessageBox::critical(this, "Error", msg);
                 mUi->statusBar->showMessage(msg);
             }
-            updateWindowTitle();
         }
     }
 }
 
 void MainWindow::on_actionImport_triggered() {
-    QModelIndex parentIndex = mUi->treeView->selectionModel()->currentIndex();
-    YaffsItem* parentItem = static_cast<YaffsItem*>(parentIndex.internalPointer());
-    if (parentItem) {
-        QString importFilename = QFileDialog::getOpenFileName(this, "Select file to import", ".");
-        importFilename.replace('\\', '/');
-        qDebug() << "Import file: " << importFilename;
-        mYaffsModel->importFile(parentItem, importFilename);
+    DialogImport import(this);
+    int result = import.exec();
+
+    if (result == DialogImport::RESULT_FILE) {
+        QModelIndex parentIndex = mUi->treeView->selectionModel()->currentIndex();
+        YaffsItem* parentItem = static_cast<YaffsItem*>(parentIndex.internalPointer());
+        if (parentItem && parentItem->isDir()) {
+            QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select file(s) to import...");
+            foreach (QString importFilename, fileNames) {
+                importFilename.replace('\\', '/');
+                mYaffsModel->importFile(parentItem, importFilename);
+            }
+        }
+    } else if (result == DialogImport::RESULT_DIRECTORY) {
+        QModelIndex parentIndex = mUi->treeView->selectionModel()->currentIndex();
+        YaffsItem* parentItem = static_cast<YaffsItem*>(parentIndex.internalPointer());
+        if (parentItem && parentItem->isDir()) {
+            QString directoryName = QFileDialog::getExistingDirectory(this, "Select directory to import...");
+            if (directoryName.length() > 0) {
+                directoryName.replace('\\', '/');
+                mYaffsModel->importDirectory(parentItem, directoryName);
+            }
+        }
     }
 }
 
@@ -299,6 +332,11 @@ void MainWindow::on_actionEditProperties_triggered() {
         dialog->exec();
     }
     setupActions();
+}
+
+void MainWindow::on_actionAndroidFastboot_triggered() {
+    QDialog* fastbootDialog = new DialogFastboot(this);
+    fastbootDialog->exec();
 }
 
 void MainWindow::on_actionAbout_triggered() {
@@ -478,7 +516,7 @@ int MainWindow::identifySelection(const QModelIndexList& selectedRows) {
             selectionFlags |= (item->isRoot() ? SELECTED_ROOT : 0);
             selectionFlags |= (item->isDir() ? SELECTED_DIR : 0);
             selectionFlags |= (item->isFile() ? SELECTED_FILE : 0);
-            selectionFlags |= (item->isSimLink() ? SELECTED_SIMLINK : 0);
+            selectionFlags |= (item->isSymLink() ? SELECTED_SYMLINK : 0);
         }
     }
 
@@ -529,7 +567,7 @@ void MainWindow::setupActions() {
     if (selectionSize >= 1) {
         mUi->actionDelete->setEnabled(!(selectionFlags & SELECTED_ROOT));
         mUi->actionEditProperties->setEnabled(!(selectionFlags & SELECTED_ROOT));
-        mUi->actionExport->setEnabled((selectionFlags & (SELECTED_DIR | SELECTED_FILE) && !(selectionFlags & SELECTED_SIMLINK)));
+        mUi->actionExport->setEnabled((selectionFlags & (SELECTED_DIR | SELECTED_FILE) && !(selectionFlags & SELECTED_SYMLINK)));
 
         mUi->statusBar->showMessage("Selected " + QString::number(selectedRows.size()) + " items");
     } else if (selectionSize == 0) {

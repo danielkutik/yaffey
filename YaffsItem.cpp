@@ -16,9 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+#include <QDebug>
+
 #include <QStringList>
 #include <QDateTime>
-#include <QDebug>
 #include <QMap>
 
 #include "YaffsItem.h"
@@ -82,6 +83,20 @@ YaffsItem* YaffsItem::createFile(YaffsItem* parentItem, const QString& filenameW
     return item;
 }
 
+YaffsItem* YaffsItem::createDirectory(YaffsItem* parentItem, const QString& dirNameWithPath) {
+    int slashPos = dirNameWithPath.lastIndexOf('/');
+    QString dirName = dirNameWithPath.mid(slashPos + 1);
+
+    YaffsItem* item = new YaffsItem(parentItem, dirName, YAFFS_OBJECT_TYPE_DIRECTORY);
+    const yaffs_obj_hdr& parentHeader = parentItem->getHeader();
+    item->mYaffsObjectHeader.parent_obj_id = parentItem->mYaffsObjectId;
+    item->mYaffsObjectHeader.yst_mode = parentHeader.yst_mode;
+    item->mYaffsObjectHeader.yst_uid = parentHeader.yst_uid;
+    item->mYaffsObjectHeader.yst_gid = parentHeader.yst_gid;
+
+    return item;
+}
+
 void YaffsItem::removeChild(int row) {
     YaffsItem* item = mChildItems.at(row);
     delete item;
@@ -105,7 +120,7 @@ QVariant YaffsItem::data(int column) const {
     } else if (column == PERMISSIONS) {
         return parseMode(mYaffsObjectHeader.yst_mode);
     } else if (column == ALIAS) {
-        if (isSimLink()) {
+        if (isSymLink()) {
             return mYaffsObjectHeader.alias;
         }
     } else if (column == DATE_ACCESSED) {
@@ -198,7 +213,7 @@ void YaffsItem::setPermissions(uint permissions) {
 }
 
 void YaffsItem::setAlias(const QString& alias) {
-    if (isSimLink()) {
+    if (isSymLink()) {
         if (alias.length() > 0) {
             QString newAlias = alias;
             if (newAlias.length() > YAFFS_MAX_ALIAS_LENGTH) {

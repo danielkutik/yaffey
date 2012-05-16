@@ -36,9 +36,10 @@ public:
 
     void newImage(const QString& newImageName);
     YaffsReadInfo openImage(const QString& imageFilename);
-    void importFile(YaffsItem* parentItem, const QString filenameWithPath);
+    void importFile(YaffsItem* parentItem, const QString& filenameWithPath);
+    void importDirectory(YaffsItem* parentItem, const QString& directoryName);
     bool save();
-    bool saveAs(const QString& filename);
+    YaffsSaveInfo saveAs(const QString& filename);
     QString getImageFilename() const { return mImageFilename; }
     bool isDirty() const { return (mItemsDirty + mItemsDeleted + mItemsNew); }
     bool isImageOpen() const { return (mYaffsRoot != NULL); }
@@ -62,7 +63,7 @@ protected:
 private:
     void saveDirectory(YaffsItem* dirItem);
     void saveFile(YaffsItem* dirItem);
-    void saveSimLink(YaffsItem* dirItem);
+    void saveSymLink(YaffsItem* dirItem);
 
 private:
     QString mImageFilename;

@@ -71,6 +71,7 @@ public:
 
     static YaffsItem* createRoot();
     static YaffsItem* createFile(YaffsItem* parentItem, const QString& filenameWithPath, int filesize);
+    static YaffsItem* createDirectory(YaffsItem* parentItem, const QString& filenameWithPath);
 
     QVariant data(int column) const;
     int row() const;
@@ -106,7 +107,7 @@ public:
     bool isRoot() const { return (mParentItem == NULL); }
     bool isDir() const { return mYaffsObjectHeader.type == YAFFS_OBJECT_TYPE_DIRECTORY; }
     bool isFile() const { return mYaffsObjectHeader.type == YAFFS_OBJECT_TYPE_FILE; }
-    bool isSimLink() const { return mYaffsObjectHeader.type == YAFFS_OBJECT_TYPE_SYMLINK; }
+    bool isSymLink() const { return mYaffsObjectHeader.type == YAFFS_OBJECT_TYPE_SYMLINK; }
     Condition getCondition() const { return mCondition; }
 
 private:

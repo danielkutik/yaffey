@@ -48,7 +48,7 @@ DialogEditProperties::DialogEditProperties(YaffsModel& yaffsModel, QModelIndexLi
 
         //name & alias
         mUi->lineName->setText(name);
-        if (item->isSimLink()) {
+        if (item->isSymLink()) {
             mUi->lineAlias->setText(alias);
         } else {
             mUi->lineAlias->setEnabled(false);

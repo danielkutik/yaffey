@@ -28,7 +28,7 @@
 #define SELECTED_ROOT               0x1
 #define SELECTED_DIR                0x2
 #define SELECTED_FILE               0x4
-#define SELECTED_SIMLINK            0x8
+#define SELECTED_SYMLINK            0x8
 #define SELECTED_SINGLE             0x10
 
 namespace Ui {
@@ -70,6 +70,7 @@ private slots:
     void on_model_DataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
     void on_model_LayoutChanged();
     void on_treeView_selectionChanged();
+    void on_actionAndroidFastboot_triggered();
 
 private:
     void newModel();

@@ -20,7 +20,9 @@ SOURCES   += main.cpp\
     YaffsExporter.cpp \
     yaffs2/yaffs_packedtags2.c \
     yaffs2/yaffs_hweight.c \
-    yaffs2/yaffs_ecc.c
+    yaffs2/yaffs_ecc.c \
+    DialogFastboot.cpp \
+    DialogImport.cpp
 
 HEADERS   += \
     MainWindow.h \
@@ -36,11 +38,15 @@ HEADERS   += \
     yaffs2/yaffs_guts.h \
     yaffs2/yaffs_ecc.h \
     AndroidIDs.h \
-    Yaffs2.h
+    Yaffs2.h \
+    DialogFastboot.h \
+    DialogImport.h
 
 FORMS     += \
     MainWindow.ui \
-    DialogEditProperties.ui
+    DialogEditProperties.ui \
+    DialogFastboot.ui \
+    DialogImport.ui
 
 RESOURCES += \
     icons.qrc

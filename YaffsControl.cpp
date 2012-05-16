@@ -40,6 +40,7 @@ YaffsControl::YaffsControl(const char* imageFileName, YaffsControlObserver* obse
     }
 
     mImageFile = NULL;
+    memset(&mSaveInfo, 0, sizeof(YaffsSaveInfo));
 }
 
 YaffsControl::~YaffsControl() {
@@ -67,13 +68,17 @@ bool YaffsControl::open(OpenType openType) {
     return (mImageFile != NULL);
 }
 
-YaffsReadInfo YaffsControl::readImage() {
+bool YaffsControl::readImage() {
     int result = 0;
     memset(&mReadInfo, 0, sizeof(YaffsReadInfo));
     if (mImageFile) {
         while (result == 0) {
             result = readPage();
             if (result == -1) {
+                if (feof(mImageFile)) {
+                    mReadInfo.eofHasIncompletePage = true;
+                    result = 1;
+                }
                 break;
             }
             processPage();
@@ -81,7 +86,7 @@ YaffsReadInfo YaffsControl::readImage() {
     }
     mReadInfo.result = (result == 1);
     mObserver->readComplete();
-    return mReadInfo;
+    return mReadInfo.result;
 }
 
 int YaffsControl::addRoot(const yaffs_obj_hdr& objectHeader, int& headerPos) {
@@ -89,6 +94,9 @@ int YaffsControl::addRoot(const yaffs_obj_hdr& objectHeader, int& headerPos) {
     int objectId = YAFFS_OBJECTID_ROOT;
     if (!writeHeader(objectHeader, objectId)) {
         objectId = -1;
+        mSaveInfo.numDirsFailed++;
+    } else {
+        mSaveInfo.numDirsSaved++;
     }
     return YAFFS_OBJECTID_ROOT;
 }
@@ -98,6 +106,9 @@ int YaffsControl::addDirectory(const yaffs_obj_hdr& objectHeader, int& headerPos
     int objectId = mObjectId++;
     if (!writeHeader(objectHeader, objectId)) {
         objectId = -1;
+        mSaveInfo.numDirsFailed++;
+    } else {
+        mSaveInfo.numDirsSaved++;
     }
     return objectId;
 }
@@ -105,32 +116,51 @@ int YaffsControl::addDirectory(const yaffs_obj_hdr& objectHeader, int& headerPos
 int YaffsControl::addFile(const yaffs_obj_hdr& objectHeader, int& headerPos, const char* data, int fileSize) {
     headerPos = ftell(mImageFile);
     int objectId = mObjectId++;
+    int chunks = (fileSize / CHUNK_SIZE);
+    int remainder = (fileSize % CHUNK_SIZE);
+    int pageGoal = chunks + (remainder > 0 ? 1 : 0);
+    int pagesWritten = 0;
+    bool wroteHeader = false;
+
     if (writeHeader(objectHeader, objectId)) {
+        wroteHeader = true;
         int chunkId = 0;
-        int chunks = (fileSize / CHUNK_SIZE);
-        int remainder = (fileSize % CHUNK_SIZE);
 
         const char* dataPtr = data;
         for (int i = 0; i < chunks; ++i) {
             memcpy(mChunkData, dataPtr, CHUNK_SIZE);
-            writePage(objectId, ++chunkId, CHUNK_SIZE);
+            if (writePage(objectId, ++chunkId, CHUNK_SIZE)) {
+                pagesWritten++;
+            }
             dataPtr += CHUNK_SIZE;
         }
 
         if (remainder > 0) {
             memset(mChunkData + remainder, 0xff, CHUNK_SIZE - remainder);
             memcpy(mChunkData, dataPtr, remainder);
-            writePage(objectId, ++chunkId, remainder);
+            if (writePage(objectId, ++chunkId, remainder)) {
+                pagesWritten++;
+            }
         }
     }
+
+    if (wroteHeader && pagesWritten == pageGoal) {
+        mSaveInfo.numFilesSaved++;
+    } else {
+        mSaveInfo.numFilesFailed++;
+    }
+
     return objectId;
 }
 
-int YaffsControl::addSimLink(const yaffs_obj_hdr& objectHeader, int& headerPos) {
+int YaffsControl::addSymLink(const yaffs_obj_hdr& objectHeader, int& headerPos) {
     headerPos = ftell(mImageFile);
     int objectId = mObjectId++;
-    if (!writeHeader(objectHeader, objectId)) {
+    if (writeHeader(objectHeader, objectId)) {
+        mSaveInfo.numSymLinksSaved++;
+    } else {
         objectId = -1;
+        mSaveInfo.numSymLinksFailed++;
     }
     return objectId;
 }
