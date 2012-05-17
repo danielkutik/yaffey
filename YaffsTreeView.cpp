@@ -83,6 +83,7 @@ void YaffsTreeView::dropEvent(QDropEvent* event) {
                 YaffsModel* yaffsManagerModel = YaffsManager::getInstance()->getModel();
                 YaffsModel* yaffsModel = static_cast<YaffsModel*>(model());
 
+                //sanity check to make sure the view is showing the model that the manager has
                 if (yaffsManagerModel == yaffsModel) {
                     QList<QUrl> urls = mimeData->urls();
                     foreach (QUrl url, urls) {

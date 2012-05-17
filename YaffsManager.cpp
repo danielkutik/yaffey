@@ -29,8 +29,7 @@ YaffsManager* YaffsManager::getInstance() {
 
 YaffsManager::YaffsManager() {
     mYaffsModel = NULL;
-    mFilesExported = 0;
-    mDirsExported = 0;
+    mYaffsExportInfo = NULL;
 }
 
 YaffsManager::~YaffsManager() {
@@ -45,19 +44,17 @@ YaffsModel* YaffsManager::newModel() {
     return mYaffsModel;
 }
 
-void YaffsManager::exportItem(const YaffsItem* item, const QString& path) {
-    mFileExportFailures.clear();        //temp until ExportInfo is introduced
-    mDirExportFailures.clear();
-    mFilesExported = 0;
-    mDirsExported = 0;
+YaffsExportInfo* YaffsManager::exportItems(QModelIndexList itemIndices, const QString& path) {
+    mYaffsExportInfo = new YaffsExportInfo();
+    mYaffsExportInfo->numDirsExported = 0;
+    mYaffsExportInfo->numFilesExported = 0;
 
-    if (item) {
-        if (item->isFile()) {
-            exportFile(item, path);
-        } else if (item->isDir()) {
-            exportDirectory(item, path);
-        }
+    foreach (QModelIndex index, itemIndices) {
+        YaffsItem* item = static_cast<YaffsItem*>(index.internalPointer());
+        exportItem(item, path);
     }
+
+    return mYaffsExportInfo;
 }
 
 void YaffsManager::on_model_DataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight) {
@@ -66,6 +63,16 @@ void YaffsManager::on_model_DataChanged(const QModelIndex& topLeft, const QModel
 
 void YaffsManager::on_model_LayoutChanged() {
     emit modelChanged();
+}
+
+void YaffsManager::exportItem(const YaffsItem* item, const QString& path) {
+    if (item) {
+        if (item->isFile()) {
+            exportFile(item, path);
+        } else if (item->isDir()) {
+            exportDirectory(item, path);
+        }
+    }
 }
 
 void YaffsManager::exportFile(const YaffsItem* item, const QString& path) {
@@ -86,9 +93,9 @@ void YaffsManager::exportFile(const YaffsItem* item, const QString& path) {
     }
 
     if (result) {
-        mFilesExported++;
+        mYaffsExportInfo->numFilesExported++;
     } else {
-        mFileExportFailures.append(item);
+        mYaffsExportInfo->listFileExportFailures.append(item);
     }
 }
 
@@ -107,21 +114,15 @@ void YaffsManager::exportDirectory(const YaffsItem* item, const QString& path) {
             int childCount = item->childCount();
             for (int i = 0; i < childCount; ++i) {
                 const YaffsItem* childItem = item->child(i);
-                if (childItem) {
-                    if (childItem->isFile()) {
-                        exportFile(childItem, dir);
-                    } else if (childItem->isDir()) {
-                        exportDirectory(childItem, dir);
-                    }
-                }
+                exportItem(childItem, dir);
             }
         }
     }
 
     if (result) {
-        mDirsExported++;
+        mYaffsExportInfo->numDirsExported++;
     } else {
-        mDirExportFailures.append(item);
+        mYaffsExportInfo->listDirExportFailures.append(item);
     }
 }
 

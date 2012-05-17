@@ -24,6 +24,13 @@
 
 #include "YaffsModel.h"
 
+struct YaffsExportInfo {
+    int numFilesExported;
+    int numDirsExported;
+    QList<const YaffsItem*> listFileExportFailures;
+    QList<const YaffsItem*> listDirExportFailures;
+};
+
 class YaffsManager : public QObject {
     Q_OBJECT
 
@@ -32,12 +39,8 @@ public:
     ~YaffsManager();
 
     YaffsModel* newModel();
-    void exportItem(const YaffsItem* item, const QString& path);
+    YaffsExportInfo* exportItems(QModelIndexList itemIndices, const QString& path);
     YaffsModel* getModel() { return mYaffsModel; }
-    int getFileExportCount() const { return mFilesExported; }
-    int getDirExportCount() const { return mDirsExported; }
-    const QList<const YaffsItem*>& getFileExportFailures() const { return mFileExportFailures; }
-    const QList<const YaffsItem*>& getDirExportFailures() const { return mDirExportFailures; }
 
 signals:
     void modelChanged();
@@ -48,6 +51,7 @@ private slots:
 
 private:
     YaffsManager();
+    void exportItem(const YaffsItem* item, const QString& path);
     void exportFile(const YaffsItem* item, const QString& path);
     void exportDirectory(const YaffsItem* item, const QString& path);
     bool saveDataToFile(const QString& filename, const char* data, int length);
@@ -55,10 +59,7 @@ private:
 private:
     static YaffsManager* mSelf;
     YaffsModel* mYaffsModel;
-    QList<const YaffsItem*> mFileExportFailures;
-    QList<const YaffsItem*> mDirExportFailures;
-    int mFilesExported;
-    int mDirsExported;
+    YaffsExportInfo* mYaffsExportInfo;
 };
 
 #endif  //YAFFSMANAGER_H

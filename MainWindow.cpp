@@ -448,17 +448,14 @@ void MainWindow::on_treeView_selectionChanged() {
 void MainWindow::exportSelectedItems(const QString& path) {
     QModelIndexList selectedRows = mUi->treeView->selectionModel()->selectedRows();
     if (selectedRows.size() > 0) {
-        foreach (QModelIndex index, selectedRows) {
-            YaffsItem* item = static_cast<YaffsItem*>(index.internalPointer());
-            mYaffsManager->exportItem(item, path);
-        }
+        YaffsExportInfo* exportInfo = mYaffsManager->exportItems(selectedRows, path);
 
-        QString status = "Exported " + QString::number(mYaffsManager->getDirExportCount()) + " dir(s) and " +
-                                       QString::number(mYaffsManager->getFileExportCount()) + " file(s).";
+        QString status = "Exported " + QString::number(exportInfo->numDirsExported) + " dir(s) and " +
+                                       QString::number(exportInfo->numFilesExported) + " file(s).";
         mUi->statusBar->showMessage(status);
 
-        int dirFails = mYaffsManager->getDirExportFailures().size();
-        int fileFails = mYaffsManager->getFileExportFailures().size();
+        int dirFails = exportInfo->listDirExportFailures.size();
+        int fileFails = exportInfo->listFileExportFailures.size();
         if (dirFails + fileFails > 0) {
             QString msg;
 
@@ -466,9 +463,8 @@ void MainWindow::exportSelectedItems(const QString& path) {
                 static const int MAXDIRS = 10;
                 QString items;
                 int max = (dirFails > MAXDIRS ? MAXDIRS : dirFails);
-                const QList<const YaffsItem*> list = mYaffsManager->getDirExportFailures();
                 for (int i = 0; i < max; ++i) {
-                    const YaffsItem* item = list.at(i);
+                    const YaffsItem* item = exportInfo->listDirExportFailures.at(i);
                     items += item->getFullPath() + "\n";
                 }
                 msg += "Failed to export directories:\n" + items;
@@ -485,10 +481,9 @@ void MainWindow::exportSelectedItems(const QString& path) {
 
                 static const int MAXFILES = 10;
                 QString items;
-                int max = (fileFails > MAXFILES ? MAXFILES : dirFails);
-                const QList<const YaffsItem*> list = mYaffsManager->getFileExportFailures();
+                int max = (fileFails > MAXFILES ? MAXFILES : fileFails);
                 for (int i = 0; i < max; ++i) {
-                    const YaffsItem* item = list.at(i);
+                    const YaffsItem* item = exportInfo->listFileExportFailures.at(i);
                     items += item->getFullPath() + "\n";
                 }
                 msg += "Failed to export files:\n" + items;
@@ -500,6 +495,8 @@ void MainWindow::exportSelectedItems(const QString& path) {
 
             QMessageBox::critical(this, "Export", msg);
         }
+
+        delete exportInfo;
     }
 }
 
