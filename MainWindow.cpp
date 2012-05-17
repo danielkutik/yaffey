@@ -448,8 +448,6 @@ void MainWindow::on_treeView_selectionChanged() {
 void MainWindow::exportSelectedItems(const QString& path) {
     QModelIndexList selectedRows = mUi->treeView->selectionModel()->selectedRows();
     if (selectedRows.size() > 0) {
-        QString imageFilename = mYaffsModel->getImageFilename();
-        mYaffsManager->setImageFile(imageFilename);
         foreach (QModelIndex index, selectedRows) {
             YaffsItem* item = static_cast<YaffsItem*>(index.internalPointer());
             mYaffsManager->exportItem(item, path);

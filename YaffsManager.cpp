@@ -42,7 +42,6 @@ YaffsModel* YaffsManager::newModel() {
     mYaffsModel = new YaffsModel();
     connect(mYaffsModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&)), SLOT(on_model_DataChanged(QModelIndex, QModelIndex)));
     connect(mYaffsModel, SIGNAL(layoutChanged()), SLOT(on_model_LayoutChanged()));
-    emit modelChanged();
     return mYaffsModel;
 }
 
@@ -71,10 +70,11 @@ void YaffsManager::on_model_LayoutChanged() {
 
 void YaffsManager::exportFile(const YaffsItem* item, const QString& path) {
     bool result = false;
-    if (item->isFile()) {
+    if (item->isFile() && item->getCondition() != YaffsItem::NEW) {
         int headerPosition = item->getHeaderPosition();
         int filesize = item->getFileSize();
-        YaffsControl yaffsControl(mImageFile.toStdString().c_str(), NULL);
+        QString imageFilename = mYaffsModel->getImageFilename();
+        YaffsControl yaffsControl(imageFilename.toStdString().c_str(), NULL);
         if (yaffsControl.open(YaffsControl::OPEN_READ)) {
             char* data = yaffsControl.extractFile(headerPosition);
             if (data != NULL) {
@@ -94,7 +94,7 @@ void YaffsManager::exportFile(const YaffsItem* item, const QString& path) {
 
 void YaffsManager::exportDirectory(const YaffsItem* item, const QString& path) {
     bool result = false;
-    if (item->isDir()) {
+    if (item->isDir() && item->getCondition() != YaffsItem::NEW) {
         result = true;
         QString dir(path);
 
@@ -107,7 +107,13 @@ void YaffsManager::exportDirectory(const YaffsItem* item, const QString& path) {
             int childCount = item->childCount();
             for (int i = 0; i < childCount; ++i) {
                 const YaffsItem* childItem = item->child(i);
-                exportItem(childItem, dir);
+                if (childItem) {
+                    if (childItem->isFile()) {
+                        exportFile(childItem, dir);
+                    } else if (childItem->isDir()) {
+                        exportDirectory(childItem, dir);
+                    }
+                }
             }
         }
     }

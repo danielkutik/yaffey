@@ -282,13 +282,9 @@ void YaffsControl::processPage() {
     if (pt->t.n_bytes == 0xffff) {       //a new object
         yaffs_obj_hdr* objectHeader = reinterpret_cast<yaffs_obj_hdr*>(mChunkData);
 
-        long headerPos = ftell(mImageFile) - PAGE_SIZE;
         switch (objectHeader->type) {
             case YAFFS_OBJECT_TYPE_FILE:
                 mReadInfo.numFiles++;
-
-                //skip over the chunks for the file data
-                fseek(mImageFile, objectHeader->file_size_low + (PAGE_SIZE - (objectHeader->file_size_low % PAGE_SIZE)), SEEK_CUR);
                 break;
             case YAFFS_OBJECT_TYPE_SYMLINK:
                 mReadInfo.numSymLinks++;
@@ -313,6 +309,16 @@ void YaffsControl::processPage() {
         if (objectHeader->type == YAFFS_OBJECT_TYPE_FILE ||
                 objectHeader->type == YAFFS_OBJECT_TYPE_DIRECTORY ||
                 objectHeader->type == YAFFS_OBJECT_TYPE_SYMLINK) {
+
+            //calculate header position to pass to observer
+            long headerPos = ftell(mImageFile) - PAGE_SIZE;
+
+            //skip over the chunks for the file data
+            if (objectHeader->type == YAFFS_OBJECT_TYPE_FILE) {
+                int pagePadding = PAGE_SIZE - (objectHeader->file_size_low % PAGE_SIZE);
+                fseek(mImageFile, objectHeader->file_size_low + pagePadding, SEEK_CUR);
+            }
+
             if (mObserver) {
                 mObserver->newItem(pt->t.obj_id, objectHeader, headerPos);
             }

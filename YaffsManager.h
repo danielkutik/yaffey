@@ -33,7 +33,6 @@ public:
 
     YaffsModel* newModel();
     void exportItem(const YaffsItem* item, const QString& path);
-    void setImageFile(const QString& imageFile) { mImageFile = imageFile; }     //temp until YaffsManager owns the Model and Image filename
     YaffsModel* getModel() { return mYaffsModel; }
     int getFileExportCount() const { return mFilesExported; }
     int getDirExportCount() const { return mDirsExported; }
@@ -56,7 +55,6 @@ private:
 private:
     static YaffsManager* mSelf;
     YaffsModel* mYaffsModel;
-    QString mImageFile;
     QList<const YaffsItem*> mFileExportFailures;
     QList<const YaffsItem*> mDirExportFailures;
     int mFilesExported;
