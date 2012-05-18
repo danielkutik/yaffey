@@ -204,22 +204,6 @@ void MainWindow::on_actionClose_triggered() {
     setupActions();
 }
 
-void MainWindow::on_actionSave_triggered() {
-/*    if (mYaffsModel->isImageOpen()) {
-        QString imageFile = mYaffsModel->getImageFilename();
-        bool saved = mYaffsModel->save();
-        if (saved) {
-            mUi->statusBar->showMessage("Image saved: " + imageFile);
-        } else {
-            QString msg = "Error saving image: " + imageFile;
-            QMessageBox::critical(this, "Error", msg);
-            mUi->statusBar->showMessage(msg);
-        }
-    } else {
-        mUi->statusBar->showMessage("Nothing to save");
-    }*/
-}
-
 void MainWindow::on_actionSaveAs_triggered() {
     if (mYaffsModel->isImageOpen()) {
         QString imgName = mYaffsModel->getImageFilename();
@@ -304,24 +288,42 @@ void MainWindow::on_actionRename_triggered() {
 
 void MainWindow::on_actionDelete_triggered() {
     QModelIndexList selectedRows = mUi->treeView->selectionModel()->selectedRows();
-    int selectedRowCount = selectedRows.size();
-    if (selectedRowCount == 1) {
-/*        QModelIndex itemIndex = selectedRows.at(0);
-        mUi->treeView->selectionModel()->clearSelection();
-        QVariant name = itemIndex.data();
-        if (mYaffsModel->removeRow(itemIndex.row(), itemIndex.parent())) {
-            mUi->statusBar->showMessage("Deleted item: " + name.toString());
-        }*/
 
-        int deleted = 0;
-        for (int i = selectedRows.size() - 1; i >= 0; --i) {
-            QModelIndex index = selectedRows.at(i);
-            mYaffsModel->removeRow(index.row(), index.parent());
-            deleted++;
+    QMultiMap<QModelIndex, QModelIndex> items;
+    for (int i = 0; i < selectedRows.size(); ++i) {
+        QModelIndex index = selectedRows.at(i);
+        items.insert(index.parent(), index);
+    }
+
+    QList<QModelIndex> keys = items.uniqueKeys();
+    for (int i = keys.size() - 1; i >= 0; --i) {
+        QModelIndex parentIndex = keys.at(i);
+        QList<QModelIndex> childIndices = items.values(parentIndex);
+        qSort(childIndices);
+
+        int start = childIndices.at(0).row();
+        int previous = start;
+        int count = 1;
+        int size = childIndices.size();
+        if (size == 1) {
+            mYaffsModel->removeRows(start, count, parentIndex);
+        } else {
+            for (int j = 1; j < size; ++j) {
+                int row = childIndices.at(j).row();
+                if (row == previous + 1 && j != size - 1) {
+                    count++;
+                    previous = row;
+                } else {
+                    if (j == size - 1) {
+                        ++count;
+                    }
+                    mYaffsModel->removeRows(start, count, parentIndex);
+                    start = row;
+                    previous = start;
+                    count = 1;
+                }
+            }
         }
-        mUi->statusBar->showMessage("Deleted " + QString::number(deleted) + " items");
-    } else if (selectedRowCount > 1) {
-        mUi->statusBar->showMessage("Currently only deleting 1 object at a time is supported");
     }
 }
 
@@ -533,12 +535,6 @@ void MainWindow::setupActions() {
         mUi->actionExpandAll->setEnabled(false);
         mUi->actionCollapseAll->setEnabled(false);
         mUi->actionSaveAs->setEnabled(false);
-    }
-
-    if (mYaffsModel->isDirty()) {
-        mUi->actionSave->setEnabled(true);
-    } else {
-        mUi->actionSave->setEnabled(false);
     }
 
     mUi->actionEditProperties->setEnabled(false);

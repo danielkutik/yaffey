@@ -199,18 +199,6 @@
     <string>&amp;About</string>
    </property>
   </action>
-  <action name="actionSave">
-   <property name="icon">
-    <iconset resource="icons.qrc">
-     <normaloff>:/icons/icons/save.png</normaloff>:/icons/icons/save.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Save</string>
-   </property>
-   <property name="toolTip">
-    <string>Save Image</string>
-   </property>
-  </action>
   <action name="actionColumnName">
    <property name="checkable">
     <bool>true</bool>
