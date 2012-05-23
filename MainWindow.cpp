@@ -32,7 +32,7 @@
 #include "YaffsTreeView.h"
 
 static const QString APPNAME = "Yaffey";
-static const QString VERSION = "0.1";
+static const QString VERSION = "0.2";
 
 MainWindow::MainWindow(QWidget* parent, QString imageFilename) : QMainWindow(parent),
                                                                  mUi(new Ui::MainWindow),
