@@ -33,6 +33,8 @@ YaffsItem::YaffsItem(YaffsItem* parent, const yaffs_obj_hdr* yaffsObjectHeader, 
     mHeaderPosition = headerPosition;
     mYaffsObjectId = yaffsObjectId;
     mCondition = CLEAN;
+    mMarkedForDelete = false;
+    mHasChildMarkedForDelete = false;
 }
 
 YaffsItem::YaffsItem(YaffsItem* parent, const QString& name, yaffs_obj_type type) {
@@ -240,6 +242,20 @@ void YaffsItem::setGroupId(uint gid) {
     if (gid != mYaffsObjectHeader.yst_gid) {
         mYaffsObjectHeader.yst_gid = gid;
         makeDirty();
+    }
+}
+
+void YaffsItem::markForDelete() {
+    //mark this item to be deleted
+    mMarkedForDelete = true;
+
+    //set all parents to having a child marked for delete
+    YaffsItem* parent = mParentItem;
+    while (parent) {
+        if (!parent->isMarkedForDelete()) {
+            parent->setHasChildMarkedForDelete(true);
+        }
+        parent = parent->mParentItem;
     }
 }
 

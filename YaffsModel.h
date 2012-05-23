@@ -53,7 +53,7 @@ public:
     QModelIndex parent(const QModelIndex& itemIndex) const;
     int rowCount(const QModelIndex& parentIndex = QModelIndex()) const;
     int columnCount(const QModelIndex& parentIndex = QModelIndex()) const;
-    bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex());
+    int removeRows(const QModelIndexList& selectedRows);
 
 protected:
     //from YaffsControlObserver
@@ -64,6 +64,9 @@ private:
     void saveDirectory(YaffsItem* dirItem);
     void saveFile(YaffsItem* dirItem);
     void saveSymLink(YaffsItem* dirItem);
+    int processChildItemsForDelete(YaffsItem* item);
+    int calculateAndDeleteContiguousRows(QList<int>& rows, YaffsItem* parentItem);
+    int deleteRows(int row, int count, const QModelIndex& parentIndex);
 
 private:
     QString mImageFilename;

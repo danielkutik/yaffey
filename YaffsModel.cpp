@@ -476,24 +476,90 @@ int YaffsModel::columnCount(const QModelIndex& parentIndex) const {
     return YaffsItem::COLUMN_COUNT;
 }
 
-bool YaffsModel::removeRows(int row, int count, const QModelIndex& parentIndex) {
-    bool result = false;
+int YaffsModel::removeRows(const QModelIndexList& selectedRows) {
+    //mark all selected items for delete
+    foreach (QModelIndex index, selectedRows) {
+        YaffsItem* item = static_cast<YaffsItem*>(index.internalPointer());
+        if (item) {
+            item->markForDelete();
+        }
+    }
 
-    YaffsItem* parentItem = static_cast<YaffsItem*>(parentIndex.internalPointer());
-    if (parentItem) {
+    //iterate through ALL items and process the marked ones
+    return processChildItemsForDelete(mYaffsRoot);
+}
+
+int YaffsModel::processChildItemsForDelete(YaffsItem* item) {
+    int itemsDeleted = 0;
+    if (item->hasChildMarkedForDelete()) {
+        QList<int> rowsToDelete;
+
+        //iterate through child items to build up list of items to delete
+        for (int i = 0; i < item->childCount(); ++i) {
+            YaffsItem* childItem = item->child(i);
+            if (childItem->isMarkedForDelete()) {
+                rowsToDelete.append(childItem->row());
+            } else if (childItem->hasChildMarkedForDelete()) {
+                itemsDeleted += processChildItemsForDelete(childItem);
+                item->setHasChildMarkedForDelete(false);
+            }
+        }
+
+        itemsDeleted += calculateAndDeleteContiguousRows(rowsToDelete, item);
+    }
+    return itemsDeleted;
+}
+
+int YaffsModel::calculateAndDeleteContiguousRows(QList<int>& rows, YaffsItem* parentItem) {
+    int itemsDeleted = 0;
+
+    qSort(rows);
+
+    int size = rows.size();
+    int thisRow, nextRow;
+    int count = 1;
+
+    for (int i = size - 1; i >= 0; --i) {
+        thisRow = rows.at(i);
+        bool lastRow = (i == 0);
+
+        if (!lastRow) {
+            nextRow = rows.at(i - 1);
+        }
+
+        if (lastRow || nextRow != thisRow - 1) {
+            qDebug() << "Removing rows (start, count): (" << thisRow << ", " << count << ")";
+            QModelIndex parentIndex = createIndex(parentItem->row(), 0, parentItem);
+            itemsDeleted += deleteRows(thisRow, count, parentIndex);
+            count = 0;
+
+            if (lastRow) {
+                break;
+            }
+        }
+
+        ++count;
+    }
+
+    return itemsDeleted;
+}
+
+int YaffsModel::deleteRows(int row, int count, const QModelIndex& parentIndex) {
+    int itemsDeleted = 0;
+
+    if (parentIndex.isValid()) {
         beginRemoveRows(parentIndex, row, row + (count - 1));
         for (int i = row + (count - 1); i >= row; --i) {
+            YaffsItem* parentItem = static_cast<YaffsItem*>(parentIndex.internalPointer());
             parentItem->removeChild(row);
-            mItemsDeleted++;
+            itemsDeleted++;
         }
         endRemoveRows();
-        result = true;
-    }
-
-    if (result) {
         emit layoutChanged();
     }
-    return result;
+
+    mItemsDeleted += itemsDeleted;
+    return itemsDeleted;
 }
 
 //from YaffsReaderObserver

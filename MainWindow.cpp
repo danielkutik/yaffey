@@ -288,43 +288,8 @@ void MainWindow::on_actionRename_triggered() {
 
 void MainWindow::on_actionDelete_triggered() {
     QModelIndexList selectedRows = mUi->treeView->selectionModel()->selectedRows();
-
-    QMultiMap<QModelIndex, QModelIndex> items;
-    for (int i = 0; i < selectedRows.size(); ++i) {
-        QModelIndex index = selectedRows.at(i);
-        items.insert(index.parent(), index);
-    }
-
-    QList<QModelIndex> keys = items.uniqueKeys();
-    for (int i = keys.size() - 1; i >= 0; --i) {
-        QModelIndex parentIndex = keys.at(i);
-        QList<QModelIndex> childIndices = items.values(parentIndex);
-        qSort(childIndices);
-
-        int start = childIndices.at(0).row();
-        int previous = start;
-        int count = 1;
-        int size = childIndices.size();
-        if (size == 1) {
-            mYaffsModel->removeRows(start, count, parentIndex);
-        } else {
-            for (int j = 1; j < size; ++j) {
-                int row = childIndices.at(j).row();
-                if (row == previous + 1 && j != size - 1) {
-                    count++;
-                    previous = row;
-                } else {
-                    if (j == size - 1) {
-                        ++count;
-                    }
-                    mYaffsModel->removeRows(start, count, parentIndex);
-                    start = row;
-                    previous = start;
-                    count = 1;
-                }
-            }
-        }
-    }
+    int numRowsDeleted = mYaffsModel->removeRows(selectedRows);
+    mUi->statusBar->showMessage("Deleted " + QString::number(numRowsDeleted) + " items");
 }
 
 void MainWindow::on_actionEditProperties_triggered() {

@@ -85,6 +85,10 @@ public:
     void setObjectId(int objectId) { mYaffsObjectId = objectId; }
     void setParentObjectId(int parentObjectId) { mYaffsObjectHeader.parent_obj_id = parentObjectId; }
     void setHeaderPosition(int headerPos) { mHeaderPosition = headerPos; }
+    void markForDelete();
+    void setHasChildMarkedForDelete(bool mark) { mHasChildMarkedForDelete = mark; }
+    bool isMarkedForDelete() { return mMarkedForDelete; }
+    bool hasChildMarkedForDelete() { return mHasChildMarkedForDelete; }
 
     void appendChild(YaffsItem* child) { mChildItems.append(child); }
     void removeChild(int row);
@@ -123,6 +127,8 @@ private:
     yaffs_obj_hdr mYaffsObjectHeader;
     Condition mCondition;
     QString mExternalFilename;      //filename with path - only for new files
+    bool mMarkedForDelete;
+    bool mHasChildMarkedForDelete;
 };
 
 #endif  //YAFFSITEM_H
